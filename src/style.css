@@ -156,3 +156,27 @@ select:focus, input:focus { outline: 2px solid var(--primary); outline-offset: 1
 
 .line-label { font-weight: 700; color: var(--primary); }
 .label-text { display: inline-flex; align-items: center; }
+
+/* 주소 검색 */
+.field > label { font-weight: 600; }
+.search-row { display: flex; gap: 6px; }
+.search-row input { flex: 1; min-width: 0; }
+.search-row .btn { white-space: nowrap; }
+.field .hint { font-weight: 400; margin: 2px 0 0; }
+.address-results { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.address-results:empty { display: none; }
+.address-results button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-weight: 400;
+  font-size: 0.85rem;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+.address-results button:hover { background: var(--primary-soft); }
+.place-item .address, .popup-address { font-size: 0.82rem; color: var(--text); }
+.position { white-space: pre-line; }

@@ -7,6 +7,14 @@ export const SAME_SPOT_METERS = 10;
 
 const normalizeName = (name) => String(name ?? '').trim().replace(/\s+/g, ' ');
 
+// 저장할 장소 모양을 만듭니다. 주소는 있을 때만 넣습니다.
+function toPlace(id, input) {
+  const place = { id, name: normalizeName(input.name), lat: Number(input.lat), lng: Number(input.lng) };
+  const address = normalizeName(input.address);
+  if (address) place.address = address;
+  return place;
+}
+
 function makeId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `place-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -24,7 +32,7 @@ export function validatePlace(input, places, ignoreId = null) {
   const lat = Number(input?.lat);
   const lng = Number(input?.lng);
   if (input?.lat == null || input?.lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return '지도를 클릭해서 장소의 위치를 골라 주세요.';
+    return '주소를 찾거나 지도를 클릭해서 장소의 위치를 골라 주세요.';
   }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     return '위치 값이 올바르지 않아요. 지도를 다시 클릭해 주세요.';
@@ -80,7 +88,7 @@ export function createPlaceStore(storage = globalThis.localStorage) {
     add(input) {
       const error = validatePlace(input, places);
       if (error) return result(false, { error });
-      const place = { id: makeId(), name: normalizeName(input.name), lat: Number(input.lat), lng: Number(input.lng) };
+      const place = toPlace(makeId(), input);
       places.push(place);
       return result(true, { place: { ...place }, saved: save() });
     },
@@ -89,7 +97,7 @@ export function createPlaceStore(storage = globalThis.localStorage) {
       if (index === -1) return result(false, { error: '수정할 장소를 찾지 못했어요.' });
       const error = validatePlace(input, places, id);
       if (error) return result(false, { error });
-      places[index] = { id, name: normalizeName(input.name), lat: Number(input.lat), lng: Number(input.lng) };
+      places[index] = toPlace(id, input);
       return result(true, { place: { ...places[index] }, saved: save() });
     },
     remove(id) {

@@ -4,14 +4,16 @@ import './style.css';
 import { BUSAN_CENTER, BUSAN_ZOOM } from './data/defaultPlaces.js';
 import { createPlaceStore } from './lib/placeStore.js';
 import { haversineDistance, formatDistance } from './lib/distance.js';
+import { createGeocoder } from './lib/geocoder.js';
 
 const store = createPlaceStore();
+const geocoder = createGeocoder(import.meta.env.VITE_KAKAO_JS_KEY);
 
 // 화면 상태: 선택한 두 장소, 수정 중인 장소, 지도에서 고른 위치
 const state = {
   selected: { a: null, b: null },
   editingId: null,
-  draft: null, // { lat, lng }
+  draft: null, // { lat, lng, address? }
 };
 
 const $ = (id) => document.getElementById(id);
@@ -23,6 +25,10 @@ const els = {
   form: $('place-form'),
   formTitle: $('form-title'),
   name: $('place-name'),
+  address: $('place-address'),
+  addressSearchBtn: $('address-search-btn'),
+  addressResults: $('address-results'),
+  addressHint: $('address-hint'),
   position: $('place-position'),
   message: $('form-message'),
   saveBtn: $('save-btn'),
@@ -72,6 +78,7 @@ function popupContent(place) {
   pickB.addEventListener('click', () => { selectPlace('b', place.id); map.closePopup(); });
   return el('div', {}, [
     el('div', { className: 'popup-name', textContent: place.name }),
+    ...(place.address ? [el('div', { className: 'popup-address', textContent: place.address })] : []),
     el('div', { className: 'popup-coords', textContent: `위도: ${fmtCoord(place.lat)}` }),
     el('div', { className: 'popup-coords', textContent: `경도: ${fmtCoord(place.lng)}` }),
     el('div', { className: 'popup-actions' }, [pickA, pickB]),
@@ -96,8 +103,11 @@ function renderMarkers(places) {
   }
 }
 
-// 지도를 클릭하면 등록할 위치로 사용합니다.
+// 지도를 클릭하면 등록할 위치로 사용합니다. (주소로 못 찾을 때 쓰는 보조 방법)
+// 클릭한 곳은 주소를 알 수 없으므로 주소 칸을 비웁니다.
 map.on('click', (e) => {
+  els.address.value = '';
+  els.addressResults.replaceChildren();
   setDraft({ lat: e.latlng.lat, lng: e.latlng.lng });
   showMessage('');
   if (!els.name.value.trim()) els.name.focus({ preventScroll: true });
@@ -108,12 +118,63 @@ function setDraft(pos) {
   if (draftMarker) { draftMarker.remove(); draftMarker = null; }
   if (pos) {
     draftMarker = L.marker([pos.lat, pos.lng], { icon: pinIcon('draft', '+'), interactive: false, zIndexOffset: 2000 }).addTo(map);
-    els.position.textContent = coordText(pos);
+    els.position.textContent = pos.address ? `${pos.address}\n${coordText(pos)}` : `${coordText(pos)} (지도에서 고른 위치)`;
     els.position.classList.remove('empty');
   } else {
-    els.position.textContent = '지도에서 원하는 곳을 클릭해 주세요.';
+    els.position.textContent = '주소를 찾거나 지도를 클릭해 주세요.';
     els.position.classList.add('empty');
   }
+}
+
+/* ---------- 도로명 주소 검색 ---------- */
+
+function applyAddressResult(result) {
+  els.address.value = result.address;
+  els.addressResults.replaceChildren();
+  setDraft(result);
+  map.setView([result.lat, result.lng], Math.max(map.getZoom(), 16));
+  showMessage('찾은 위치를 확인하고 [저장하기]를 눌러 주세요. 조금 다르면 지도를 클릭해 고칠 수 있어요.');
+}
+
+async function searchAddress() {
+  els.addressResults.replaceChildren();
+  els.addressSearchBtn.disabled = true;
+  els.addressSearchBtn.textContent = '찾는 중…';
+  try {
+    const results = await geocoder.search(els.address.value);
+    if (results.length === 1) {
+      applyAddressResult(results[0]);
+    } else {
+      showMessage('주소가 여러 개 나왔어요. 맞는 주소를 골라 주세요.');
+      els.addressResults.replaceChildren(...results.map((r) => {
+        const btn = el('button', { type: 'button', textContent: r.address });
+        btn.addEventListener('click', () => applyAddressResult(r));
+        return el('li', {}, [btn]);
+      }));
+    }
+  } catch (err) {
+    showMessage(err.message, 'error');
+  } finally {
+    els.addressSearchBtn.disabled = !geocoder.available;
+    els.addressSearchBtn.textContent = '주소 찾기';
+  }
+}
+
+els.addressSearchBtn.addEventListener('click', searchAddress);
+// 주소 칸에서 Enter를 누르면 저장 대신 주소를 찾습니다.
+els.address.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.isComposing) {
+    e.preventDefault();
+    if (geocoder.available) searchAddress();
+  }
+});
+
+if (geocoder.available) {
+  els.addressHint.textContent = '주소를 입력하고 [주소 찾기]를 누르면 지도에 표시돼요. 주소로 못 찾는 곳은 지도를 클릭해도 돼요.';
+} else {
+  els.address.disabled = true;
+  els.addressSearchBtn.disabled = true;
+  els.addressHint.textContent = '주소 검색 키가 설정되지 않아 지금은 지도를 클릭해서 위치를 골라 주세요. (설정 방법은 README 참고)';
 }
 
 /* ---------- 거리 재기 ---------- */
@@ -183,7 +244,7 @@ els.clearSelection.addEventListener('click', () => {
 function renderList(places) {
   els.count.textContent = `(${places.length}곳)`;
   if (places.length === 0) {
-    els.list.replaceChildren(el('li', { className: 'empty-list', textContent: '아직 등록된 장소가 없어요. 지도를 클릭해 새 장소를 등록해 보세요.' }));
+    els.list.replaceChildren(el('li', { className: 'empty-list', textContent: '아직 등록된 장소가 없어요. 주소를 찾거나 지도를 클릭해 새 장소를 등록해 보세요.' }));
     return;
   }
   els.list.replaceChildren(...places.map((place) => {
@@ -201,6 +262,7 @@ function renderList(places) {
 
     return el('li', { className: `place-item${state.editingId === place.id ? ' editing' : ''}` }, [
       nameBtn,
+      ...(place.address ? [el('div', { className: 'address', textContent: place.address })] : []),
       el('div', { className: 'coords', textContent: coordText(place) }),
       el('div', { className: 'actions' }, [pickA, pickB, edit, del]),
     ]);
@@ -224,6 +286,8 @@ function showMessage(text, type = '') {
 function resetForm() {
   state.editingId = null;
   els.name.value = '';
+  els.address.value = '';
+  els.addressResults.replaceChildren();
   setDraft(null);
   els.formTitle.textContent = '➕ 나만의 명소 등록';
   els.saveBtn.textContent = '저장하기';
@@ -234,10 +298,12 @@ function startEdit(id) {
   if (!place) return;
   state.editingId = id;
   els.name.value = place.name;
-  setDraft({ lat: place.lat, lng: place.lng });
+  els.address.value = place.address ?? '';
+  els.addressResults.replaceChildren();
+  setDraft({ lat: place.lat, lng: place.lng, address: place.address });
   els.formTitle.textContent = '✏️ 장소 수정';
   els.saveBtn.textContent = '수정 저장';
-  showMessage('이름을 고치거나 지도를 클릭해 새 위치를 고른 뒤 [수정 저장]을 눌러 주세요.');
+  showMessage('이름을 고치거나 새 주소를 찾은 뒤 [수정 저장]을 눌러 주세요.');
   map.setView([place.lat, place.lng], Math.max(map.getZoom(), 14));
   render();
   els.form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -262,7 +328,7 @@ function savedNotice(res, text) {
 
 els.form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const input = { name: els.name.value, lat: state.draft?.lat, lng: state.draft?.lng };
+  const input = { name: els.name.value, lat: state.draft?.lat, lng: state.draft?.lng, address: state.draft?.address };
   const editing = state.editingId;
   const res = editing ? store.update(editing, input) : store.add(input);
   if (!res.ok) { showMessage(res.error, 'error'); return; }

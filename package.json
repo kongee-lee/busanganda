@@ -1,0 +1,21 @@
+{
+  "name": "busan-place-map",
+  "private": true,
+  "version": "1.0.0",
+  "description": "부산 명소 지도 웹앱",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:phone": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  }
+}

@@ -16,7 +16,9 @@
 - **핀 누르기**: 핀을 누르면 장소 이름과 위도 · 경도가 나와요.
 - **거리 재기**: 장소 두 곳을 고르면 지도에 점선이 그어지고 거리가 km와 m로 나와요.
   - 하늘에서 일직선으로 잰 거리예요. 자동차나 걸어서 가는 길의 거리와는 달라요.
-- **나만의 명소**: 이름을 쓰고 지도를 클릭해 위치를 고른 뒤 저장해요. 고치거나 지울 수도 있어요.
+- **나만의 명소**: 이름과 도로명 주소를 쓰고 [주소 찾기]를 누르면 지도에 표시돼요. 확인한 뒤 저장해요. 고치거나 지울 수도 있어요.
+  - 주소로 못 찾는 곳은 지도를 클릭해서 위치를 골라도 돼요.
+  - 주소 찾기는 카카오 주소 검색을 써요. 아래 **주소 검색 키 설정**을 한 번 해 줘야 작동해요.
   - 저장한 장소는 브라우저를 껐다 켜도 남아 있어요. (브라우저 안에 저장돼요)
 
 ## 내 컴퓨터에서 실행하는 방법
@@ -59,9 +61,44 @@
 `npm run dev` 대신 `npm run dev:phone` 을 입력하면 `Network: http://192.168.x.x:5173/` 같은 주소가 나와요.
 이 주소를 휴대전화 브라우저에 입력하면 돼요.
 
+## 주소 검색 키 설정 (처음 한 번만)
+
+도로명 주소를 위도·경도로 바꿀 때 카카오 지도를 써요. 그래서 카카오에서 무료 "JavaScript 키"를 받아야 해요.
+키가 없어도 앱은 열리지만, 주소 칸이 꺼져 있고 지도 클릭으로만 위치를 고를 수 있어요.
+
+> 카카오 사이트의 메뉴 이름은 가끔 바뀌어요. 아래와 조금 달라도 비슷한 이름을 찾으면 돼요.
+
+### 1. 카카오에서 키 받기
+
+1. <https://developers.kakao.com> 에 카카오 계정으로 로그인해요.
+2. **내 애플리케이션 → 애플리케이션 추가하기**를 눌러 앱을 하나 만들어요. (이름 예: 부산 명소 지도)
+3. 만든 앱에 들어가 **앱 키**에서 **JavaScript 키**를 복사해요. (REST API 키나 Admin 키가 아니에요!)
+4. **플랫폼 → Web**(또는 JavaScript 키의 **JavaScript SDK 도메인**)에 아래 두 주소를 등록해요.
+   - `https://kongee-lee.github.io`
+   - `http://localhost:5173`
+5. **카카오맵** 사용 설정을 **켜요(ON)**. 이걸 안 하면 주소 검색이 안 돼요.
+
+### 2. 인터넷 주소(GitHub Pages)에 키 넣기
+
+1. GitHub 저장소 → **Settings → Secrets and variables → Actions** 로 가요.
+2. **New repository secret**을 눌러요.
+3. Name에 `KAKAO_JS_KEY`, Secret에 복사한 JavaScript 키를 넣고 **Add secret**을 눌러요.
+4. 다음에 `main`에 새 내용이 올라가면 주소 찾기가 켜진 채로 배포돼요.
+   바로 다시 배포하려면 **Actions → GitHub Pages 배포 → Run workflow**를 눌러요.
+
+### 3. 내 컴퓨터에서 실행할 때 키 넣기
+
+1. 앱 폴더의 `.env.example` 파일을 복사해서 이름을 `.env.local`로 바꿔요.
+2. `VITE_KAKAO_JS_KEY=` 뒤에 키를 붙여 넣고 저장해요.
+3. `npm run dev`를 다시 실행해요.
+
+`.env.local`은 GitHub에 올라가지 않게 막아 두었어요.
+참고로 카카오 JavaScript 키는 원래 웹페이지 안에 들어가서 누구나 볼 수 있는 종류예요.
+그래서 4번처럼 **내 사이트 주소에서만 쓰이도록** 등록해 두는 게 중요해요.
+
 ## 확인용 명령어
 
-- `npm test` : 거리 계산과 장소 저장 · 수정 · 삭제가 잘 되는지 자동으로 검사해요.
+- `npm test` : 거리 계산, 주소 검색, 장소 저장 · 수정 · 삭제가 잘 되는지 자동으로 검사해요.
 - `npm run build` : 인터넷에 올릴 수 있는 완성 파일을 `dist` 폴더에 만들어요.
 
 ## 파일 구성
@@ -73,7 +110,9 @@ src/style.css             디자인 (컴퓨터 · 휴대전화 화면 모두)
 src/data/defaultPlaces.js 예시 장소와 처음 지도 위치
 src/lib/distance.js       위도·경도로 직선거리 계산 (하버사인 공식)
 src/lib/placeStore.js     장소 저장(localStorage) · 수정 · 삭제 · 중복 검사
+src/lib/geocoder.js       도로명 주소 → 위도·경도 (카카오 주소 검색)
+.env.example              주소 검색 키를 넣는 설정 파일 예시
 tests/                    자동 테스트
 ```
 
-지도는 [Leaflet](https://leafletjs.com)과 [OpenStreetMap](https://www.openstreetmap.org)을 사용해요. API 키가 필요 없어요.
+지도는 [Leaflet](https://leafletjs.com)과 [OpenStreetMap](https://www.openstreetmap.org)을 사용해요(키 필요 없음). 주소 검색만 카카오 키가 필요해요.

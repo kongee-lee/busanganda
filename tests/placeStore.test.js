@@ -107,3 +107,19 @@ describe('장소 저장소', () => {
     expect(store.getAll()).toHaveLength(4);
   });
 });
+
+describe('장소 주소', () => {
+  it('주소를 함께 저장하고, 수정하면 바뀌고, 비우면 사라짐', () => {
+    const storage = fakeStorage();
+    const store = createPlaceStore(storage);
+    const { place } = store.add({ ...TAEJONGDAE, address: '  부산 영도구  전망로 24 ' });
+    expect(place.address).toBe('부산 영도구 전망로 24');
+    expect(createPlaceStore(storage).getById(place.id).address).toBe('부산 영도구 전망로 24');
+
+    store.update(place.id, { ...TAEJONGDAE, address: '부산 영도구 전망로 25' });
+    expect(createPlaceStore(storage).getById(place.id).address).toBe('부산 영도구 전망로 25');
+
+    store.update(place.id, { ...TAEJONGDAE, address: '' });
+    expect(createPlaceStore(storage).getById(place.id)).not.toHaveProperty('address');
+  });
+});

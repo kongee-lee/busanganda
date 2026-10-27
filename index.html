@@ -45,8 +45,17 @@
                 <input id="place-name" type="text" maxlength="40" placeholder="예: 태종대" autocomplete="off" />
               </label>
               <div class="field">
+                <label for="place-address">도로명 주소</label>
+                <div class="search-row">
+                  <input id="place-address" type="text" maxlength="100" placeholder="예: 부산 영도구 전망로 24" autocomplete="off" />
+                  <button type="button" id="address-search-btn" class="btn">주소 찾기</button>
+                </div>
+                <ul id="address-results" class="address-results"></ul>
+                <p id="address-hint" class="hint"></p>
+              </div>
+              <div class="field">
                 위치
-                <div id="place-position" class="position empty">지도에서 원하는 곳을 클릭해 주세요.</div>
+                <div id="place-position" class="position empty">주소를 찾거나 지도를 클릭해 주세요.</div>
               </div>
               <p id="form-message" class="message" role="alert"></p>
               <div class="btn-row">

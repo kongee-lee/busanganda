@@ -26,6 +26,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          # 저장소 Settings → Secrets and variables → Actions 에 넣은 카카오 JavaScript 키
+          VITE_KAKAO_JS_KEY: ${{ secrets.KAKAO_JS_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

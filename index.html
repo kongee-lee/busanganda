@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>부산 명소 지도</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>🗺️ 부산 명소 지도</h1>
+        <p>핀을 누르면 장소 정보가 보여요. 두 장소를 골라 거리를 재고, 나만의 명소도 등록해 보세요.</p>
+      </header>
+
+      <main class="layout">
+        <section class="map-wrap" aria-label="지도">
+          <div id="map"></div>
+        </section>
+
+        <aside class="panel">
+          <!-- 거리 재기 -->
+          <section class="card" aria-labelledby="distance-title">
+            <h2 id="distance-title">📏 두 장소 사이 거리 재기</h2>
+            <div class="select-row">
+              <label>
+                <span class="label-text"><span class="badge badge-a">1</span>첫 번째 장소</span>
+                <select id="select-a"></select>
+              </label>
+              <label>
+                <span class="label-text"><span class="badge badge-b">2</span>두 번째 장소</span>
+                <select id="select-b"></select>
+              </label>
+            </div>
+            <div id="distance-result" class="result" aria-live="polite"></div>
+            <p class="hint">※ 하늘에서 일직선으로 잰 거리예요. 도로를 따라가는 실제 이동 거리와는 달라요.</p>
+            <button type="button" id="clear-selection" class="btn btn-ghost">선택 지우기</button>
+          </section>
+
+          <!-- 장소 등록/수정 -->
+          <section class="card" aria-labelledby="form-title">
+            <h2 id="form-title">➕ 나만의 명소 등록</h2>
+            <form id="place-form" novalidate>
+              <label class="field">
+                장소 이름
+                <input id="place-name" type="text" maxlength="40" placeholder="예: 태종대" autocomplete="off" />
+              </label>
+              <div class="field">
+                위치
+                <div id="place-position" class="position empty">지도에서 원하는 곳을 클릭해 주세요.</div>
+              </div>
+              <p id="form-message" class="message" role="alert"></p>
+              <div class="btn-row">
+                <button type="submit" id="save-btn" class="btn btn-primary">저장하기</button>
+                <button type="button" id="cancel-btn" class="btn btn-ghost">취소</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- 장소 목록 -->
+          <section class="card" aria-labelledby="list-title">
+            <h2 id="list-title">📍 장소 목록 <span id="place-count" class="count"></span></h2>
+            <ul id="place-list" class="place-list"></ul>
+            <button type="button" id="reset-btn" class="btn btn-ghost small">예시 장소로 되돌리기</button>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
